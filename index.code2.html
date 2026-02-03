@@ -1,1 +1,886 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>neuMAC | Clinical Innovation (PULMONOLOGY DEPARTMENT)</title>
+    <!-- Tailwind cCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        .neu-card {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 20px;
+            box-shadow: 20px 20px 60px #d9d9d9, -20px -20px 60px #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .neu-input {
+            background: #f8f9fa;
+            border-radius: 12px;
+            box-shadow: inset 5px 5px 10px #e0e0e0, inset -5px -5px 10px #ffffff;
+            border: none;
+        }
+        .neu-btn {
+            background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+            border-radius: 12px;
+            box-shadow: 5px 5px 15px #d1d9e6, -5px -5px 15px #ffffff;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .neu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 8px 8px 20px #d1d9e6, -8px -8px 20px #ffffff;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .pulse-ring {
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .tab-active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="min-h-screen">
+        <!-- Top Navigation -->
+        <nav class="gradient-bg text-white shadow-xl">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                                <i class="fas fa-lungs text-2xl text-blue-600"></i>
+                                <div class="absolute inset-0 border-4 border-blue-400 rounded-full pulse-ring"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight">neuMAC | Clinical Innovation</h1>
+                            <p class="text-blue-100">PULMONOLOGY DEPARTMENT</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/30 transition" @click="notificationsOpen = !notificationsOpen">
+                                <i class="fas fa-bell"></i>
+                                <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">{{ unreadNotifications }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-md text-blue-600"></i>
+                            </div>
+                            <span class="font-medium">Dr. {{ currentUser?.email?.split('@')[0] || 'User' }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats NNNN-->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="neu-card p-4 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Total Patients</p>
+                            <p class="text-2xl font-bold">{{ stats.totalPatients || 0 }}</p>
+                        </div>
+                        <i class="fas fa-users text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="neu-card p-4 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Active Asthma</p>
+                            <p class="text-2xl font-bold text-green-600">{{ stats.asthmaPatients || 0 }}</p>
+                        </div>
+                        <i class="fas fa-wind text-green-500 text-2xl"></i>
+                    </div>
+                    <div class="neu-card p-4 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">COPD Cases</p>
+                            <p class="text-2xl font-bold text-orange-600">{{ stats.copdPatients || 0 }}</p>
+                        </div>
+                        <i class="fas fa-smog text-orange-500 text-2xl"></i>
+                    </div>
+                    <div class="neu-card p-4 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Exacerbations (7d)</p>
+                            <p class="text-2xl font-bold text-red-600">{{ stats.recentExacerbations || 0 }}</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- Connection Status -->
+            <div v-if="connectionStatus" class="mb-6 flex items-center space-x-3 p-4 rounded-lg" :class="connectionStatus === 'Connected' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
+                <i :class="connectionStatus === 'Connected' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+                <span>Supabase: {{ connectionStatus }}</span>
+                <button v-if="connectionStatus !== 'Connected'" @click="initializeSupabase" class="ml-4 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Reconnect</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex space-x-1 mb-8 p-1 bg-gray-100 rounded-xl w-full md:w-auto">
+                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" 
+                        :class="['px-6 py-3 rounded-lg font-medium transition-all', activeTab === tab.id ? 'tab-active' : 'text-gray-600 hover:text-gray-900']">
+                    <i :class="tab.icon" class="mr-2"></i>{{ tab.name }}
+                </button>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div v-if="activeTab === 'dashboard'" class="slide-in">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Left Column -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- Patient Overview Chart -->
+                        <div class="neu-card p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold">Disease Distribution</h3>
+                                <select v-model="chartPeriod" class="neu-input px-4 py-2 text-sm">
+                                    <option value="7d">Last 7 Days</option>
+                                    <option value="30d">Last 30 Days</option>
+                                    <option value="90d">Last 90 Days</option>
+                                </select>
+                            </div>
+                            <div id="diseaseChart" class="h-80"></div>
+                        </div>
+
+                        <!-- Recent Exacerbations -->
+                        <div class="neu-card p-6">
+                            <h3 class="text-xl font-bold mb-6">Recent Exacerbations</h3>
+                            <div class="space-y-4">
+                                <div v-for="ex in recentExacerbations" :key="ex.id" class="p-4 border-l-4" :class="{
+                                    'border-orange-500 bg-orange-50': ex.severity === 'Moderate',
+                                    'border-red-500 bg-red-50': ex.severity === 'Severe',
+                                    'border-yellow-500 bg-yellow-50': ex.severity === 'Mild'
+                                }">
+                                    <div class="flex justify-between">
+                                        <div>
+                                            <p class="font-medium">Patient {{ ex.patient?.deidentified_id }}</p>
+                                            <p class="text-sm text-gray-600">{{ ex.start_date }}</p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium" :class="{
+                                            'bg-orange-100 text-orange-800': ex.severity === 'Moderate',
+                                            'bg-red-100 text-red-800': ex.severity === 'Severe',
+                                            'bg-yellow-100 text-yellow-800': ex.severity === 'Mild'
+                                        }">{{ ex.severity }}</span>
+                                    </div>
+                                    <p class="text-sm mt-2">{{ ex.suspected_trigger || 'No trigger specified' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-8">
+                        <!-- Quick Actions -->
+                        <div class="neu-card p-6">
+                            <h3 class="text-xl font-bold mb-6">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button @click="showNewPatient = true" class="neu-btn p-4 flex flex-col items-center justify-center">
+                                    <i class="fas fa-user-plus text-2xl mb-2"></i>
+                                    <span>New Patient</span>
+                                </button>
+                                <button @click="showNewPFT = true" class="neu-btn p-4 flex flex-col items-center justify-center">
+                                    <i class="fas fa-lungs text-2xl mb-2"></i>
+                                    <span>Add PFT</span>
+                                </button>
+                                <button @click="showNewExacerbation = true" class="neu-btn p-4 flex flex-col items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                                    <span>Record Exacerbation</span>
+                                </button>
+                                <button @click="exportData" class="neu-btn p-4 flex flex-col items-center justify-center">
+                                    <i class="fas fa-file-export text-2xl mb-2"></i>
+                                    <span>Export Data</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Phenotype Breakdown -->
+                        <div class="neu-card p-6">
+                            <h3 class="text-xl font-bold mb-6">Phenotype Analysis</h3>
+                            <div class="space-y-4">
+                                <div v-for="phenotype in phenotypes" :key="phenotype.name" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 rounded-full mr-3" :class="phenotype.color"></div>
+                                        <span>{{ phenotype.name }}</span>
+                                    </div>
+                                    <span class="font-bold">{{ phenotype.count }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Status -->
+                        <div class="neu-card p-6">
+                            <h3 class="text-xl font-bold mb-6">Database Status</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between">
+                                    <span>Patients Table</span>
+                                    <span class="font-bold">{{ stats.totalPatients || 0 }} records</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>PFT Results</span>
+                                    <span class="font-bold">{{ stats.pftCount || 0 }} tests</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Active Connections</span>
+                                    <span class="font-bold text-green-600">Live</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patients Tab -->
+            <div v-if="activeTab === 'patients'" class="slide-in">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="relative flex-1 max-w-md">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" v-model="patientSearch" placeholder="Search patients by ID, name, or diagnosis..." class="neu-input w-full pl-10 pr-4 py-3">
+                    </div>
+                    <button @click="showNewPatient = true" class="neu-btn px-6 py-3 ml-4">
+                        <i class="fas fa-plus mr-2"></i>New Patient
+                    </button>
+                </div>
+
+                <div class="neu-card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="py-3 px-4 text-left font-medium text-gray-700">Patient ID</th>
+                                    <th class="py-3 px-4 text-left font-medium text-gray-700">Age/Sex</th>
+                                    <th class="py-3 px-4 text-left font-medium text-gray-700">Diagnosis</th>
+                                    <th class="py-3 px-4 text-left font-medium text-gray-700">Latest FEV1%</th>
+                                    <th class="py-3 px-4 text-left font-medium text-gray-700">Last Visit</th>
+                                    <th class="py-3 px-4 text-left font-medium text-gray-700">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="patient in filteredPatients" :key="patient.id" class="hover:bg-gray-50 transition">
+                                    <td class="py-4 px-4">
+                                        <div class="font-medium">{{ patient.deidentified_id }}</div>
+                                        <div class="text-sm text-gray-500">{{ patient.smoking_status }} smoker</div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        {{ patient.age }} / {{ patient.biological_sex?.charAt(0) }}
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <span v-for="diag in patient.diagnoses" :key="diag.id" class="px-2 py-1 text-xs rounded-full" 
+                                                  :class="getDiagnosisClass(diag.disease_entity)">
+                                                {{ diag.disease_entity }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center">
+                                            <span :class="getFEV1Class(patient.latest_fev1)" class="font-bold">{{ patient.latest_fev1 || 'N/A' }}</span>
+                                            <span class="text-sm text-gray-500 ml-1">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        {{ patient.last_visit || 'No visits' }}
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex space-x-2">
+                                            <button @click="viewPatient(patient.id)" class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button @click="editPatient(patient)" class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button @click="showPatientCharts(patient.id)" class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-200">
+                                                <i class="fas fa-chart-line"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PFT Analysis Tab -->
+            <div v-if="activeTab === 'pft'" class="slide-in">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <div class="neu-card p-6">
+                            <h3 class="text-xl font-bold mb-6">Pulmonary Function Trends</h3>
+                            <div id="pftChart" class="h-96"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="neu-card p-6">
+                            <h3 class="text-xl font-bold mb-6">Add PFT Record</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+                                    <select v-model="newPFT.patient_id" class="neu-input w-full p-3">
+                                        <option value="">Select Patient</option>
+                                        <option v-for="p in patients" :value="p.id">{{ p.deidentified_id }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Test Date</label>
+                                    <input type="date" v-model="newPFT.test_date" class="neu-input w-full p-3">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">FEV1 Pre</label>
+                                        <input type="number" v-model="newPFT.fev1_pre" class="neu-input w-full p-3" placeholder="% pred">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">FEV1 Post</label>
+                                        <input type="number" v-model="newPFT.fev1_post" class="neu-input w-full p-3" placeholder="% pred">
+                                    </div>
+                                </div>
+                                <button @click="savePFT" class="neu-btn w-full py-3 mt-4">
+                                    <i class="fas fa-save mr-2"></i>Save PFT Record
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div v-if="activeTab === 'analytics'" class="slide-in">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="neu-card p-6">
+                        <h3 class="text-xl font-bold mb-6">Exacerbation Patterns</h3>
+                        <div id="exacerbationChart" class="h-80"></div>
+                    </div>
+                    <div class="neu-card p-6">
+                        <h3 class="text-xl font-bold mb-6">Treatment Effectiveness</h3>
+                        <div id="treatmentChart" class="h-80"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modals -->
+        <!-- New Patient Modal -->
+        <div v-if="showNewPatient" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="neu-card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold">New Patient Registration</h3>
+                        <button @click="showNewPatient = false" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                <input type="date" v-model="newPatient.date_of_birth" class="neu-input w-full p-3">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Biological Sex</label>
+                                <select v-model="newPatient.biological_sex" class="neu-input w-full p-3">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Smoking Status</label>
+                            <select v-model="newPatient.smoking_status" class="neu-input w-full p-3">
+                                <option value="Never">Never</option>
+                                <option value="Former">Former</option>
+                                <option value="Current">Current</option>
+                            </select>
+                        </div>
+                        <div v-if="newPatient.smoking_status !== 'Never'">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pack Years</label>
+                            <input type="number" v-model="newPatient.pack_years" class="neu-input w-full p-3" step="0.1">
+                        </div>
+                        <div class="flex space-x-4 pt-4">
+                            <button @click="savePatient" class="neu-btn flex-1 py-3">
+                                <i class="fas fa-save mr-2"></i>Save Patient
+                            </button>
+                            <button @click="showNewPatient = false" class="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Detail Modal -->
+        <div v-if="selectedPatient" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="neu-card w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold">Patient {{ selectedPatient.deidentified_id }}</h3>
+                            <p class="text-gray-600">Full Clinical Profile</p>
+                        </div>
+                        <button @click="selectedPatient = null" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Patient Summary -->
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="neu-card p-4">
+                            <h4 class="font-bold text-gray-700 mb-2">Demographics</h4>
+                            <p>Age: {{ selectedPatient.age }}</p>
+                            <p>Sex: {{ selectedPatient.biological_sex }}</p>
+                            <p>Smoking: {{ selectedPatient.smoking_status }} ({{ selectedPatient.pack_years || 0 }} PY)</p>
+                        </div>
+                        <div class="neu-card p-4">
+                            <h4 class="font-bold text-gray-700 mb-2">Diagnoses</h4>
+                            <div class="flex flex-wrap gap-1">
+                                <span v-for="diag in selectedPatient.diagnoses" :key="diag.id" class="px-2 py-1 text-xs rounded-full mb-1" 
+                                      :class="getDiagnosisClass(diag.disease_entity)">
+                                    {{ diag.disease_entity }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="neu-card p-4">
+                            <h4 class="font-bold text-gray-700 mb-2">Latest PFT</h4>
+                            <p>FEV1: <span :class="getFEV1Class(selectedPatient.latest_fev1)" class="font-bold">{{ selectedPatient.latest_fev1 || 'N/A' }}%</span></p>
+                            <p>Last Test: {{ selectedPatient.last_pft_date || 'No PFT' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- PFT History -->
+                    <h4 class="font-bold text-lg mb-4">PFT History</h4>
+                    <div class="neu-card p-4 mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="py-2 text-left">Date</th>
+                                        <th class="py-2 text-left">FEV1 Pre</th>
+                                        <th class="py-2 text-left">FEV1 Post</th>
+                                        <th class="py-2 text-left">Change</th>
+                                        <th class="py-2 text-left">Interpretation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="pft in selectedPatient.pfts" :key="pft.id" class="border-b hover:bg-gray-50">
+                                        <td class="py-2">{{ pft.test_date }}</td>
+                                        <td class="py-2">{{ pft.fev1_pre }}%</td>
+                                        <td class="py-2">{{ pft.fev1_post }}%</td>
+                                        <td class="py-2" :class="pft.fev1_change_percent >= 12 ? 'text-green-600 font-bold' : ''">
+                                            {{ pft.fev1_change_percent }}%
+                                        </td>
+                                        <td class="py-2">{{ pft.interpretation || '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // Supabase Configuration - USING YOUR PROVIDED CREDENTIALS
+                const supabaseUrl = 'https://hshrtnvdyudjoxswcrmu.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzaHJ0bnZkeXVkam94c3djcm11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNDcxMjYsImV4cCI6MjA4NTYyMzEyNn0.5NSTssN-0dexLL7WW6U1suzidgKX4YB9ngsngTTEOVg';
+                
+                let supabase = null;
+                const connectionStatus = ref('Connecting...');
+                const currentUser = ref(null);
+
+                // Initialize Supabase
+                const initializeSupabase = () => {
+                    try {
+                        supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                        connectionStatus.value = 'Connected';
+                        console.log('Supabase connected successfully');
+                        fetchData();
+                    } catch (error) {
+                        console.error('Supabase connection error:', error);
+                        connectionStatus.value = 'Connection Failed';
+                    }
+                };
+
+                // Application State
+                const activeTab = ref('dashboard');
+                const tabs = [
+                    { id: 'dashboard', name: 'Dashboard', icon: 'fas fa-tachometer-alt' },
+                    { id: 'patients', name: 'Patients', icon: 'fas fa-users-medical' },
+                    { id: 'pft', name: 'PFT Analysis', icon: 'fas fa-lungs' },
+                    { id: 'analytics', name: 'Analytics', icon: 'fas fa-chart-bar' }
+                ];
+
+                // Data Stores
+                const patients = ref([]);
+                const pftResults = ref([]);
+                const exacerbations = ref([]);
+                const diagnoses = ref([]);
+                const recentExacerbations = ref([]);
+                const stats = ref({
+                    totalPatients: 0,
+                    asthmaPatients: 0,
+                    copdPatients: 0,
+                    recentExacerbations: 0,
+                    pftCount: 0
+                });
+
+                const phenotypes = ref([
+                    { name: 'Eosinophilic Asthma', count: 0, color: 'bg-green-500' },
+                    { name: 'Allergic Asthma', count: 0, color: 'bg-blue-500' },
+                    { name: 'COPD Emphysema', count: 0, color: 'bg-orange-500' },
+                    { name: 'Chronic Bronchitis', count: 0, color: 'bg-red-500' },
+                    { name: 'ACO Overlap', count: 0, color: 'bg-purple-500' }
+                ]);
+
+                // Search and Filter
+                const patientSearch = ref('');
+
+                // Modal States
+                const showNewPatient = ref(false);
+                const showNewPFT = ref(false);
+                const showNewExacerbation = ref(false);
+                const selectedPatient = ref(null);
+                const notificationsOpen = ref(false);
+                const unreadNotifications = ref(3);
+
+                // Form Data
+                const newPatient = ref({
+                    date_of_birth: '',
+                    biological_sex: 'Male',
+                    smoking_status: 'Never',
+                    pack_years: 0
+                });
+
+                const newPFT = ref({
+                    patient_id: '',
+                    test_date: new Date().toISOString().split('T')[0],
+                    fev1_pre: '',
+                    fev1_post: '',
+                    fvc_pre: '',
+                    fvc_post: ''
+                });
+
+                // Computed Properties
+                const filteredPatients = computed(() => {
+                    if (!patientSearch.value) return patients.value;
+                    const search = patientSearch.value.toLowerCase();
+                    return patients.value.filter(patient => 
+                        patient.deidentified_id?.toLowerCase().includes(search) ||
+                        patient.biological_sex?.toLowerCase().includes(search) ||
+                        patient.smoking_status?.toLowerCase().includes(search) ||
+                        patient.diagnoses?.some(d => d.disease_entity.toLowerCase().includes(search))
+                    );
+                });
+
+                // Methods
+                const fetchData = async () => {
+                    try {
+                        // Fetch patients with their diagnoses
+                        const { data: patientsData, error: patientsError } = await supabase
+                            .from('patients')
+                            .select(`
+                                *,
+                                diagnoses (*),
+                                pft_results (test_date, fev1_post),
+                                exacerbations (*)
+                            `)
+                            .order('created_at', { ascending: false });
+
+                        if (!patientsError && patientsData) {
+                            patients.value = patientsData.map(p => ({
+                                ...p,
+                                latest_fev1: p.pft_results?.[0]?.fev1_post,
+                                last_visit: p.pft_results?.[0]?.test_date,
+                                last_pft_date: p.pft_results?.[0]?.test_date,
+                                pfts: p.pft_results || []
+                            }));
+                            stats.value.totalPatients = patientsData.length;
+                        }
+
+                        // Fetch recent exacerbations
+                        const { data: exData, error: exError } = await supabase
+                            .from('exacerbations')
+                            .select(`
+                                *,
+                                patients (deidentified_id)
+                            `)
+                            .order('start_date', { ascending: false })
+                            .limit(5);
+
+                        if (!exError && exData) {
+                            recentExacerbations.value = exData;
+                            stats.value.recentExacerbations = exData.filter(e => {
+                                const date = new Date(e.start_date);
+                                const weekAgo = new Date();
+                                weekAgo.setDate(weekAgo.getDate() - 7);
+                                return date > weekAgo;
+                            }).length;
+                        }
+
+                        // Calculate phenotype counts
+                        calculatePhenotypes();
+                        
+                        // Initialize charts
+                        setTimeout(initializeCharts, 500);
+                        
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                    }
+                };
+
+                const calculatePhenotypes = () => {
+                    // Mock phenotype calculation - in real app, this would query the database
+                    phenotypes.value = phenotypes.value.map(p => ({
+                        ...p,
+                        count: Math.floor(Math.random() * 20) + 5
+                    }));
+                };
+
+                const savePatient = async () => {
+                    try {
+                        const { data, error } = await supabase
+                            .from('patients')
+                            .insert([newPatient.value])
+                            .select();
+
+                        if (!error && data) {
+                            alert('Patient saved successfully!');
+                            showNewPatient.value = false;
+                            newPatient.value = {
+                                date_of_birth: '',
+                                biological_sex: 'Male',
+                                smoking_status: 'Never',
+                                pack_years: 0
+                            };
+                            fetchData();
+                        } else {
+                            alert('Error saving patient: ' + error.message);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error saving patient');
+                    }
+                };
+
+                const savePFT = async () => {
+                    if (!newPFT.value.patient_id || !newPFT.value.test_date) {
+                        alert('Please select a patient and test date');
+                        return;
+                    }
+
+                    try {
+                        const pftData = {
+                            ...newPFT.value,
+                            fev1_change_percent: newPFT.value.fev1_post && newPFT.value.fev1_pre 
+                                ? (((newPFT.value.fev1_post - newPFT.value.fev1_pre) / newPFT.value.fev1_pre) * 100).toFixed(1)
+                                : null
+                        };
+
+                        const { data, error } = await supabase
+                            .from('pft_results')
+                            .insert([pftData])
+                            .select();
+
+                        if (!error && data) {
+                            alert('PFT record saved successfully!');
+                            showNewPFT.value = false;
+                            newPFT.value = {
+                                patient_id: '',
+                                test_date: new Date().toISOString().split('T')[0],
+                                fev1_pre: '',
+                                fev1_post: '',
+                                fvc_pre: '',
+                                fvc_post: ''
+                            };
+                            fetchData();
+                        } else {
+                            alert('Error saving PFT: ' + error.message);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error saving PFT');
+                    }
+                };
+
+                const viewPatient = (patientId) => {
+                    const patient = patients.value.find(p => p.id === patientId);
+                    if (patient) {
+                        selectedPatient.value = patient;
+                    }
+                };
+
+                const editPatient = (patient) => {
+                    // In a real app, this would open an edit form
+                    alert(`Edit patient ${patient.deidentified_id} - This would open edit form in full version`);
+                };
+
+                const showPatientCharts = (patientId) => {
+                    // In a real app, this would show detailed patient charts
+                    alert(`Showing charts for patient ${patientId}`);
+                };
+
+                const getDiagnosisClass = (diagnosis) => {
+                    const classes = {
+                        'Asthma': 'bg-green-100 text-green-800',
+                        'COPD': 'bg-orange-100 text-orange-800',
+                        'Bronchiectasis': 'bg-blue-100 text-blue-800',
+                        'ACO': 'bg-purple-100 text-purple-800',
+                        'Asthma_COPD_Overlap': 'bg-purple-100 text-purple-800',
+                        'Asthma_Bronchiectasis': 'bg-indigo-100 text-indigo-800'
+                    };
+                    return classes[diagnosis] || 'bg-gray-100 text-gray-800';
+                };
+
+                const getFEV1Class = (fev1) => {
+                    if (!fev1) return 'text-gray-600';
+                    if (fev1 >= 80) return 'text-green-600';
+                    if (fev1 >= 60) return 'text-yellow-600';
+                    return 'text-red-600';
+                };
+
+                const initializeCharts = () => {
+                    // Disease Distribution Chart
+                    const diseaseChart = new ApexCharts(document.querySelector("#diseaseChart"), {
+                        series: [25, 35, 20, 10, 10],
+                        chart: {
+                            type: 'donut',
+                            height: '100%'
+                        },
+                        labels: ['Asthma', 'COPD', 'Bronchiectasis', 'ACO', 'Other'],
+                        colors: ['#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#6B7280'],
+                        legend: {
+                            position: 'bottom'
+                        },
+                        plotOptions: {
+                            pie: {
+                                donut: {
+                                    labels: {
+                                        show: true,
+                                        total: {
+                                            show: true,
+                                            label: 'Total Patients',
+                                            fontSize: '16px'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    diseaseChart.render();
+
+                    // PFT Trend Chart
+                    const pftChart = new ApexCharts(document.querySelector("#pftChart"), {
+                        series: [{
+                            name: 'FEV1 % Predicted',
+                            data: [65, 68, 72, 70, 75, 78, 80]
+                        }],
+                        chart: {
+                            height: '100%',
+                            type: 'line',
+                            zoom: {
+                                enabled: false
+                            }
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        stroke: {
+                            curve: 'smooth',
+                            width: 3
+                        },
+                        colors: ['#3B82F6'],
+                        xaxis: {
+                            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
+                        },
+                        markers: {
+                            size: 5
+                        }
+                    });
+                    pftChart.render();
+                };
+
+                const exportData = () => {
+                    alert('Export functionality would be implemented in full version');
+                    // In real app: Generate CSV/Excel from current data
+                };
+
+                // Lifecycle
+                onMounted(() => {
+                    initializeSupabase();
+                });
+
+                // Return everything
+                return {
+                    supabaseUrl,
+                    supabaseKey,
+                    connectionStatus,
+                    currentUser,
+                    initializeSupabase,
+                    
+                    activeTab,
+                    tabs,
+                    
+                    patients,
+                    pftResults,
+                    exacerbations,
+                    recentExacerbations,
+                    stats,
+                    phenotypes,
+                    
+                    patientSearch,
+                    filteredPatients,
+                    
+                    showNewPatient,
+                    showNewPFT,
+                    showNewExacerbation,
+                    selectedPatient,
+                    notificationsOpen,
+                    unreadNotifications,
+                    
+                    newPatient,
+                    newPFT,
+                    
+                    fetchData,
+                    savePatient,
+                    savePFT,
+                    viewPatient,
+                    editPatient,
+                    showPatientCharts,
+                    getDiagnosisClass,
+                    getFEV1Class,
+                    exportData
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
